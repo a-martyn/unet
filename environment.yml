@@ -1,0 +1,11 @@
+name: unet
+dependencies:
+  - python=3.*
+  - tensorflow
+  - matplotlib
+  - numpy
+  - pandas
+  - seaborn
+  - scikit-learn
+  - scikit-image
+  - jupyter
