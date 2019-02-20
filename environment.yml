@@ -1,7 +1,7 @@
 name: unet
 dependencies:
   - python=3.*
-  - tensorflow
+  - tensorflow-gpu
   - matplotlib
   - numpy
   - pandas
