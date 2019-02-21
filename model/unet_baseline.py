@@ -38,7 +38,7 @@ def decoder_block(inputs, filters, kernel_size):
     
     # Upsample input to double Height and Width dimensions
     # Concatenate u-net shortcut to input
-    up = Conv2D(filters, 2, **conv_kwargs)(UpSampling2D(size=(2, 2))(x))
+    up = Conv2D(filters, 2, **conv_kwargs)(UpSampling2D(size=(2, 2), interpolation='nearest')(x))
     x = concatenate([shortcut, up], axis=3)
     
     # Convolve
