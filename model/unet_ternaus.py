@@ -29,9 +29,10 @@ def decoder_block_ternausV2(inputs, mid_channels, out_channels):
     """
     Decoder block as proposed for TernausNet16: 
     https://arxiv.org/abs/1801.05746
+    See DecoderBlockV2 here:
     https://github.com/ternaus/TernausNet/blob/master/unet_models.py
 
-    - Concatenate u-net shortcut to input pre-input
+    - Concatenate u-net shortcut to input pre-upsample
     - Bilinear upsample input to double Height and Width dimensions
     - Note: The original ternausNet implementation includes option for 
       deconvolution instead of bilinear upsampling. Omitted here because I 
@@ -45,26 +46,34 @@ def decoder_block_ternausV2(inputs, mid_channels, out_channels):
         data_format='channels_last'  # (batch, height, width, channels)
     )
 
-    x = UpSampling2D(size=(2, 2), interpolation='bilinear')(inputs)
+    x = UpSampling2D(size=(2, 2))(inputs) # interpolation='bilinear' doesn't work?
     x = Conv2D(mid_channels, 3, **conv_kwargs)(x)
     x = Conv2D(out_channels, 3, **conv_kwargs)(x)
     return x
 
 
-def ternaus_net(input_size=(256, 256, 3), num_classes=1):
-    """U-net implementation adapted from: https://github.com/zhixuhao/unet"""
+def ternausNet16(input_size=(256, 256, 3), num_classes=1):
+    """
+    A Keras implementation of TernausNet16: 
+    https://arxiv.org/abs/1801.05746
+    https://github.com/ternaus/TernausNet
+    """
 
-    # input
-    inputs = model.get_layer(name='input_1')
-    # convert 1 channel grayscale to 3 channels
+    # input 
+    # convert 1 channel grayscale to 3 channels if needed
+    inputs = Input(input_size)
     if input_size[-1] < 3:
-        inputs = Conv2D(3, 1)(inputs)   # add channels
-        input_size = (input_size[0], input_size[0], 3)
+        x = Conv2D(3, 1)(inputs)                         # add channels
+        input_shape = (input_size[0], input_size[0], 3)  # update input size
+    else:
+        x = inputs
+        input_shape = input_size
     
-    # Pretrained VGG, conv layers include relu activation
-    encoder = VGG16(include_top=False, weights='imagenet', input_shape=input_size)
+    # Load pretrained VGG, conv layers include relu activation
+    encoder = VGG16(include_top=False, weights='imagenet', input_shape=input_shape)
+       
     # (None, 256, 256, 3)
-    e1 = encoder.get_layer(name='block1_conv1')(inputs)
+    e1 = encoder.get_layer(name='block1_conv1')(x)
     e1 = encoder.get_layer(name='block1_conv2')(e1)
     # (None, 256, 256, 64)
     e2 = MaxPooling2D(pool_size=(2, 2))(e1)
