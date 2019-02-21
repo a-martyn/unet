@@ -54,10 +54,15 @@ def decoder_block_ternausV2(inputs, mid_channels, out_channels):
 def ternaus_net(input_size=(256, 256, 3), num_classes=1):
     """U-net implementation adapted from: https://github.com/zhixuhao/unet"""
 
+    # input
+    inputs = model.get_layer(name='input_1')
+    # convert 1 channel grayscale to 3 channels
+    if input_size[-1] < 3:
+        inputs = Conv2D(3, 1)(inputs)   # add channels
+        input_size = (input_size[0], input_size[0], 3)
+    
     # Pretrained VGG, conv layers include relu activation
     encoder = VGG16(include_top=False, weights='imagenet', input_shape=input_size)
-
-    inputs = model.get_layer(name='input_1')
     # (None, 256, 256, 3)
     e1 = encoder.get_layer(name='block1_conv1')(inputs)
     e1 = encoder.get_layer(name='block1_conv2')(e1)
