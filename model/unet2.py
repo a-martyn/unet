@@ -1,0 +1,154 @@
+import numpy as np
+import os
+import skimage.io as io
+import skimage.transform as trans
+from tensorflow.keras.models import *
+from tensorflow.keras.layers import *
+from tensorflow.keras.optimizers import *
+from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
+
+
+def unet2(pretrained_weights=None, input_size=(256,256,1)):
+    # Convolutional layer
+    conv_kwargs = dict(
+        padding='same',
+        kernel_initializer='he_normal',
+        data_format='channels_last'  # (batch, height, width, channels)
+    )
+
+    bn_kwargs = {
+        'axis': -1,       # because data_loader returns channels last
+        'momentum': 0.9,  # equivalent to pytorch defaults used by author (0.1 in pytorch -> 0.9 in keras/tf)
+        'epsilon': 1e-5   # match pytorch defaults
+    }
+
+    # ReLU
+    slope = 0.2
+    # Dropout
+    dropout = 0.5
+
+
+    # NOTES
+    # ----------
+    # author uses ReLU not LeakyRelu
+    # author doesn't use batch norm
+    # author uses maxpooling not stride 2
+
+    # ----------------------------------------------------------------
+    # ENCODER
+
+    # layer 1
+    inputs = Input(input_size)
+    # (256 x 256 x 1)
+    e1 = Conv2D(64, 3, strides=2, **conv_kwargs)(inputs)
+    e1 = LeakyReLU(alpha=slope)(e1)
+    e1 = Conv2D(64, 3, strides=1, **conv_kwargs)(e1)
+    # (128 x 128 x 64)
+
+    # layer 2 
+    e2 = LeakyReLU(alpha=slope)(e1)
+    e2 = Conv2D(128, 3, strides=2, **conv_kwargs)(e2)
+    e2 = BatchNormalization(**bn_kwargs)(e2)
+    e2 = LeakyReLU(alpha=slope)(e2)
+    e2 = Conv2D(128, 3, strides=1, **conv_kwargs)(e2)
+    e2 = BatchNormalization(**bn_kwargs)(e2)
+    # (64 x 64 x 128)
+
+    # layer 3 
+    e3 = LeakyReLU(alpha=slope)(e2)
+    e3 = Conv2D(256, 3, strides=2, **conv_kwargs)(e3)
+    e3 = BatchNormalization(**bn_kwargs)(e3)
+    e3 = LeakyReLU(alpha=slope)(e3)
+    e3 = Conv2D(256, 3, strides=1, **conv_kwargs)(e3)
+    e3 = BatchNormalization(**bn_kwargs)(e3)
+    # (32 x 32 x 256)
+
+    # layer 4
+    e4 = LeakyReLU(alpha=slope)(e3)
+    e4 = Conv2D(512, 3, strides=2, **conv_kwargs)(e4)
+    e4 = BatchNormalization(**bn_kwargs)(e4)
+    e4 = LeakyReLU(alpha=slope)(e4)
+    e4 = Conv2D(512, 3, strides=1, **conv_kwargs)(e4)
+    e4 = BatchNormalization(**bn_kwargs)(e4)
+    e4 = Dropout(dropout)(e4)
+    # (16 x 16 x 512)
+
+    # layer 5a
+    e5 = LeakyReLU(alpha=slope)(e4)
+    e5 = Conv2D(1024, 3, strides=2, **conv_kwargs)(e5)
+    e5 = BatchNormalization(**bn_kwargs)(e5)
+    e5 = LeakyReLU(alpha=slope)(e5)
+    e5 = Conv2D(1024, 3, strides=1, **conv_kwargs)(e5)
+    e5 = BatchNormalization(**bn_kwargs)(e5)
+    # (8 x 8 x 1024)
+
+
+    # ----------------------------------------------------------------
+    # DECODER
+
+    # layer 6
+    d1 = ReLU()(e5)
+    d1 = Conv2DTranspose(512, 2, strides=2, **conv_kwargs)(d1)
+    d1 = BatchNormalization(**bn_kwargs)(d1)
+    d1 = Dropout(dropout)(d1) 
+    # (16 x 16 x 512)
+
+    # layer 7
+    d2 = concatenate([d1, e4], axis=3)
+    d2 = ReLU()(d2)
+    d2 = Conv2DTranspose(256, 2, strides=2, **conv_kwargs)(d2)
+    d2 = BatchNormalization(**bn_kwargs)(d2)
+    d2 = ReLU()(d2)
+    d2 = Conv2D(256, 3, strides=1, **conv_kwargs)(d2)
+    d2 = BatchNormalization(**bn_kwargs)(d2)
+    d2 = ReLU()(d2)
+    d2 = Conv2D(256, 3, strides=1, **conv_kwargs)(d2)
+    d2 = BatchNormalization(**bn_kwargs)(d2)
+    # (32 x 32 x 256)
+
+    # layer 8
+    d3 = concatenate([d2, e3], axis=3)
+    d3 = ReLU()(d3)
+    d3 = Conv2DTranspose(128, 2, strides=2, **conv_kwargs)(d3)
+    d3 = BatchNormalization(**bn_kwargs)(d3)
+    d3 = ReLU()(d3)
+    d3 = Conv2D(128, 3, strides=1, **conv_kwargs)(d3)
+    d3 = BatchNormalization(**bn_kwargs)(d3)
+    d3 = ReLU()(d3)
+    d3 = Conv2D(128, 3, strides=1, **conv_kwargs)(d3)
+    d3 = BatchNormalization(**bn_kwargs)(d3)
+    # (64 x 64 x 128)
+
+    # layer 9
+    d4 = concatenate([d3, e2], axis=3)
+    d4 = ReLU()(d4)
+    d4 = Conv2DTranspose(64, 2, strides=2, **conv_kwargs)(d4)
+    d4 = BatchNormalization(**bn_kwargs)(d4)
+    d4 = ReLU()(d4)
+    d4 = Conv2D(64, 3, strides=1, **conv_kwargs)(d4)
+    d4 = BatchNormalization(**bn_kwargs)(d4)
+    d4 = ReLU()(d4)
+    d4 = Conv2D(64, 3, strides=1, **conv_kwargs)(d4)
+    d4 = BatchNormalization(**bn_kwargs)(d4)
+    # (128 x 128 x 64)
+
+    # layer 10
+    d5 = concatenate([d4, e1], axis=3)
+    d5 = ReLU()(d5)  
+    d5 = Conv2DTranspose(32, 2, strides=2, **conv_kwargs)(d5)
+    d5 = ReLU()(d5)
+    d5 = Conv2D(2, 3, strides=1, **conv_kwargs)(d5)
+    d5 = ReLU()(d5)
+    d5 = Conv2D(1, 3, strides=1, **conv_kwargs)(d5)
+    d5 = Activation('tanh')(d5)
+    # (256 x 256 x output_channels)
+
+    model = Model(inputs=[inputs], outputs=[d5])
+    model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
+
+    model.summary()
+    
+    if(pretrained_weights):
+        model.load_weights(pretrained_weights)
+
+    return model
