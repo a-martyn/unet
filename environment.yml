@@ -3,6 +3,7 @@ dependencies:
   - python=3.*
   - tensorflow-gpu
   - matplotlib
+  - pillow
   - numpy
   - pandas
   - seaborn
