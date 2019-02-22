@@ -7,6 +7,20 @@ from tensorflow.keras.layers import *
 from tensorflow.keras.optimizers import *
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 
+"""
+A Keras/Tensorflow implementation of the original U-Net architecture
+described by Olaf Ronneberger et. al in "U-Net: Convolutional Networks for
+Biomedical Image Segmentation":
+paper: https://arxiv.org/abs/1505.04597
+code : https://lmb.informatik.uni-freiburg.de/people/ronneber/u-net/
+       (see phseg_v3-train.prototxt for caffe layer descriptions)
+
+What's not implemented?
+- The authors eschew padding and as result propose cropping in the upsampling
+  layers. Here instead we use padding to avoid the need for cropping.
+"""
+
+
 
 def encoder_block(x, filters, kernel_size, downsample=False):
     conv_kwargs = dict(
@@ -26,7 +40,7 @@ def encoder_block(x, filters, kernel_size, downsample=False):
     return x
 
 
-def decoder_block(inputs, filters, kernel_size):
+def decoder_block(inputs, filters, kernel_size, transpose=True):
     x, shortcut = inputs
     
     conv_kwargs = dict(
@@ -37,8 +51,16 @@ def decoder_block(inputs, filters, kernel_size):
     )
     
     # Upsample input to double Height and Width dimensions
+    if transpose:
+        # Transposed convolution a.k.a fractionally-strided convolution 
+        # or deconvolution although use of the latter term is confused.
+        up = Conv2DTranspose(filters, 2, strides=2, **conv_kwargs)(x)
+    else:
+        # Upsampling by simply repeating rows and columns then convolve
+        up = UpSampling2D(size=(2, 2), interpolation='nearest')(x)
+        up = Conv2D(filters, 2, **conv_kwargs)
+    
     # Concatenate u-net shortcut to input
-    up = Conv2D(filters, 2, **conv_kwargs)(UpSampling2D(size=(2, 2), interpolation='nearest')(x))
     x = concatenate([shortcut, up], axis=3)
     
     # Convolve
@@ -47,8 +69,12 @@ def decoder_block(inputs, filters, kernel_size):
     return x
 
 
-def unet_baseline(input_size=(256, 256, 1)):
-    """U-net implementation adapted from: https://github.com/zhixuhao/unet"""
+def unet(input_size=(256, 256, 1), transpose=True):
+    """
+    U-net implementation adapted translated from authors original
+    source code available here: 
+    https://lmb.informatik.uni-freiburg.de/people/ronneber/u-net/
+    """
 
     # The U
     inputs = Input(input_size)
@@ -61,10 +87,10 @@ def unet_baseline(input_size=(256, 256, 1)):
     e5 = encoder_block(e4, 1024, 3, downsample=True)
     e5 = Dropout(0.5)(e5)
 
-    d6 = decoder_block([e5, e4], 512, 3)
-    d7 = decoder_block([d6, e3], 256, 3)
-    d8 = decoder_block([d7, e2], 128, 3)
-    d9 = decoder_block([d8, e1], 64,  3)
+    d6 = decoder_block([e5, e4], 512, 3, transpose=transpose)
+    d7 = decoder_block([d6, e3], 256, 3, transpose=transpose)
+    d8 = decoder_block([d7, e2], 128, 3, transpose=transpose)
+    d9 = decoder_block([d8, e1], 64,  3, transpose=transpose)
 
     # Ouput
     op = Conv2D(2, 3, padding='same', kernel_initializer='he_normal')(d9)

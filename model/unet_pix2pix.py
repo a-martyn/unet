@@ -7,6 +7,22 @@ from tensorflow.keras.layers import *
 from tensorflow.keras.optimizers import *
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 
+"""
+A Keras/Tensorflow implementation of the U-net used in pix2pix described by 
+Isola et. al in, "Image-to-Image Translation with Conditional Adversarial 
+Networks":
+https://arxiv.org/abs/1611.07004
+
+This architecture is used as the Generator in the pix2pix GAN. It is similar
+to the original U-Net architecture with some notable modifications:
+- addition of batch normalisation after each convolution
+- only a single convolution in each upsampling/downsampling 'block' as opposed
+  to 3 conv layers per block in original
+- An even number of center layers at bottom of unet and more of them
+- Use of LeakyReLU instead of ReLU for encoder layer activations
+- convolutional stride 2, and kernels size 4 used everywhere as instead of
+  2/1 stride and kernel size 3 in original
+"""
 
 def unet_pix2pix(input_shape, output_channels):
     
@@ -64,7 +80,8 @@ def unet_pix2pix(input_shape, output_channels):
 
     # layer 1 - C64
     # Batch-Norm is not applied to the first C64 layer
-    e1 = Conv2D(64, input_shape=input_shape, **conv_kwargs)
+    inputs = Input(input_shape)
+    e1 = Conv2D(64, **conv_kwargs)(inputs)
     # (128 x 128 x 64)
 
     # layer 2 - C128
@@ -128,7 +145,7 @@ def unet_pix2pix(input_shape, output_channels):
     # (2 x 2 x 512)
 
     # layer 10 - CD1024
-    d2 = Concatenate([d1, e7], axis=-1)
+    d2 = concatenate([d1, e7], axis=-1)
     d2 = ReLU()(d2)
     d2 = Conv2DTranspose(512, **conv_kwargs)(d2)
     d2 = BatchNormalization(**bn_kwargs)(d2)
@@ -136,7 +153,7 @@ def unet_pix2pix(input_shape, output_channels):
     # (4 x 4 x 512)
 
     # layer 11 - CD1024
-    d3 = Concatenate([d2, e6], axis=-1)
+    d3 = concatenate([d2, e6], axis=-1)
     d3 = ReLU()(d3)
     d3 = Conv2DTranspose(512, **conv_kwargs)(d3)
     d3 = BatchNormalization(**bn_kwargs)(d3)
@@ -144,14 +161,14 @@ def unet_pix2pix(input_shape, output_channels):
     # (8 x 8 x 512)
 
     # layer 12 - C1024
-    d4 = Concatenate([d3, e5], axis=-1)
+    d4 = concatenate([d3, e5], axis=-1)
     d4 = ReLU()(d4)
     d4 = Conv2DTranspose(512, **conv_kwargs)(d4)
     d4 = BatchNormalization(**bn_kwargs)(d4)
     # (16 x 16 x 512)
 
     # layer 13 - C1024
-    d5 = Concatenate([d4, e4], axis=-1)
+    d5 = concatenate([d4, e4], axis=-1)
     d5 = ReLU()(d5)
     # Note: authors implement an incongruous shape drop here:
     # (16 x 16 x 1024) -> (32 x 32 x 256)
@@ -160,14 +177,14 @@ def unet_pix2pix(input_shape, output_channels):
     # (32 x 32 x 256)
 
     # layer 14 - C512
-    d6 = Concatenate([d5, e3], axis=-1)
+    d6 = concatenate([d5, e3], axis=-1)
     d6 = ReLU()(d6)
     d6 = Conv2DTranspose(128, **conv_kwargs)(d6)
     d6 = BatchNormalization(**bn_kwargs)(d6)
     # (64 x 64 x 128)
 
     # layer 15 - C256
-    d7 = Concatenate([d6, e2], axis=-1)
+    d7 = concatenate([d6, e2], axis=-1)
     d7 = ReLU()(d7)
     d7 = Conv2DTranspose(64, **conv_kwargs)(d7)
     d7 = BatchNormalization(**bn_kwargs)(d7)
@@ -177,11 +194,12 @@ def unet_pix2pix(input_shape, output_channels):
     # to map to the number of output channels (3 in general, except 
     # in colorization, where it is 2), followed by a Tanh function. 
     # layer 16 - C128
-    d8 = Concatenate([d7, e1], axis=-1)
+    d8 = concatenate([d7, e1], axis=-1)
     d8 = ReLU()(d8)  
     d8 = Conv2DTranspose(output_channels, **conv_kwargs)(d8)
     d8 = Activation('tanh')(d8)
     # (256 x 256 x output_channels)
 
-    return Model(inputs=[e1], outputs=[d8], name='unet')
+    model = Model(inputs=[inputs], outputs=[d8])
+    return model
 

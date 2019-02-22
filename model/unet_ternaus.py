@@ -21,7 +21,8 @@ The key differences are:
 - A VGG16 architecture is used for encoder, pretrained on ImageNet
 - No batchnorm used
 - No dropout used
-- Shortcut concatenations are mismatched on channels counts
+- Shortcut concatenations are mismatched on number of filters meaning that 
+  a larger number of filters is used in decoder.
 """
 
 
