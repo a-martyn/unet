@@ -54,6 +54,7 @@ def decoder_block(inputs, filters, kernel_size, transpose=True):
     if transpose:
         # Transposed convolution a.k.a fractionally-strided convolution 
         # or deconvolution although use of the latter term is confused.
+        # Excellent explanation: https://github.com/vdumoulin/conv_arithmetic
         up = Conv2DTranspose(filters, 2, strides=2, **conv_kwargs)(x)
     else:
         # Upsampling by simply repeating rows and columns then convolve
