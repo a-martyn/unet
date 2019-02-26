@@ -53,7 +53,7 @@ def decoder_block_ternausV2(inputs, mid_channels, out_channels):
     return x
 
 
-def ternausNet16(input_size=(256, 256, 3), num_classes=1):
+def ternausNet16(input_size=(256, 256, 3), output_channels=1):
     """
     A Keras implementation of TernausNet16: 
     https://arxiv.org/abs/1801.05746
@@ -119,11 +119,11 @@ def ternausNet16(input_size=(256, 256, 3), num_classes=1):
     # (None, 256, 256, 32)
 
     # Output
-    if num_classes > 1:
+    if output_channels > 1:
         # untested
         op = tf.nn.log_softmax_v2(d1, axis=3)
     else:
-        op = Conv2D(num_classes, 1)(d1)
+        op = Conv2D(output_channels, 1)(d1)
         op = Activation('sigmoid')(op)  # note: ternaus excludes
 
     # Build

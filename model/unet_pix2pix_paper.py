@@ -7,28 +7,25 @@ from tensorflow.keras.layers import *
 from tensorflow.keras.optimizers import *
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 
-"""
-A Keras/Tensorflow implementation of the U-net used in pix2pix described by 
-Isola et. al in, "Image-to-Image Translation with Conditional Adversarial 
-Networks":
-https://arxiv.org/abs/1611.07004
 
-This architecture is used as the Generator in the pix2pix GAN. It is similar
-to the original U-Net architecture with some notable modifications:
-- addition of batch normalisation after each convolution
-- only a single convolution in each upsampling/downsampling 'block' as opposed
-  to 3 conv layers per block in original
-- An even number of center layers at bottom of unet and more of them
-- Use of LeakyReLU instead of ReLU for encoder layer activations
-- convolutional stride 2, and kernels size 4 used everywhere as instead of
-  2/1 stride and kernel size 3 in original
-"""
-
-def unet_pix2pix(input_shape, output_channels):
+def unet_pix2pix_paper(input_size=(256, 256, 1), output_channels=1):
     
     """
-    - All convolutions are 4×4 spatialfilters applied with stride 2.
+    A Keras/Tensorflow implementation of the U-net used in pix2pix as described by 
+    Isola et. al in, "Image-to-Image Translation with Conditional Adversarial 
+    Networks":
+    https://arxiv.org/abs/1611.07004
+    https://github.com/phillipi/pix2pix/blob/master/models.lua
     
+    This architecture is used as the Generator in the pix2pix GAN. It is similar
+    to the original U-Net architecture with some notable modifications:
+    - addition of batch normalisation after each convolution
+    - only a single convolution in each upsampling/downsampling 'block' as opposed
+      to 3 conv layers per block in original
+    - An even number of center layers at bottom of unet and more of them
+    - Use of LeakyReLU instead of ReLU for encoder layer activations
+    - convolutional stride 2, and kernels size 4 used everywhere as instead of
+      2/1 stride and kernel size 3 in original
     """
     # ----------------------------------------------------------------
     # SETTINGS
@@ -80,7 +77,7 @@ def unet_pix2pix(input_shape, output_channels):
 
     # layer 1 - C64
     # Batch-Norm is not applied to the first C64 layer
-    inputs = Input(input_shape)
+    inputs = Input(input_size)
     e1 = Conv2D(64, **conv_kwargs)(inputs)
     # (128 x 128 x 64)
 
@@ -141,7 +138,7 @@ def unet_pix2pix(input_shape, output_channels):
     d1 = ReLU()(e8)
     d1 = Conv2DTranspose(512, **conv_kwargs)(d1)
     d1 = BatchNormalization(**bn_kwargs)(d1)
-    d1 = Dropout(p=dropout)(d1)  # Note: pytorch pix2pix doesn't implement
+    d1 = Dropout(dropout)(d1)  # Note: pytorch pix2pix doesn't implement
     # (2 x 2 x 512)
 
     # layer 10 - CD1024
@@ -149,7 +146,7 @@ def unet_pix2pix(input_shape, output_channels):
     d2 = ReLU()(d2)
     d2 = Conv2DTranspose(512, **conv_kwargs)(d2)
     d2 = BatchNormalization(**bn_kwargs)(d2)
-    d2 = Dropout(p=dropout)(d2)
+    d2 = Dropout(dropout)(d2)
     # (4 x 4 x 512)
 
     # layer 11 - CD1024
@@ -157,7 +154,7 @@ def unet_pix2pix(input_shape, output_channels):
     d3 = ReLU()(d3)
     d3 = Conv2DTranspose(512, **conv_kwargs)(d3)
     d3 = BatchNormalization(**bn_kwargs)(d3)
-    d3 = Dropout(p=dropout)(d3)
+    d3 = Dropout(dropout)(d3)
     # (8 x 8 x 512)
 
     # layer 12 - C1024
@@ -202,4 +199,3 @@ def unet_pix2pix(input_shape, output_channels):
 
     model = Model(inputs=[inputs], outputs=[d8])
     return model
-

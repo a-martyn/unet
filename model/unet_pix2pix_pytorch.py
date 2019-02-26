@@ -8,7 +8,20 @@ from tensorflow.keras.optimizers import *
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 
 
-def unet2(pretrained_weights=None, input_size=(256,256,1)):
+def unet_pix2pix_pytorch(input_size=(256,256,1), output_channels=1):
+    """
+    A Keras/Tensorflow implementation of the U-net used in the latest pix2pix 
+    PyTorch official implementation:
+    https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix
+    
+    This architecture is used as the Generator in the pix2pix GAN. It is similar
+    to the original U-Net architecture with some notable modifications:
+    - addition of batch normalisation after each convolution
+    - An even number of center layers at bottom of unet and more of them
+    - Use of LeakyReLU instead of ReLU for encoder layer activations
+    - convolutional stride 2, and kernels size 4 used everywhere as instead of
+      2/1 stride and kernel size 3 in original
+    """
     # Convolutional layer
     conv_kwargs = dict(
         padding='same',
@@ -27,17 +40,10 @@ def unet2(pretrained_weights=None, input_size=(256,256,1)):
     # Dropout
     dropout = 0.5
 
-
-    # NOTES
-    # ----------
-    # author uses ReLU not LeakyRelu
-    # author doesn't use batch norm
-    # author uses maxpooling not stride 2
-
     # ----------------------------------------------------------------
     # ENCODER
 
-    # layer 1
+    # block 1
     inputs = Input(input_size)
     # (256 x 256 x 1)
     e1 = Conv2D(64, 3, strides=2, **conv_kwargs)(inputs)
@@ -45,7 +51,7 @@ def unet2(pretrained_weights=None, input_size=(256,256,1)):
     e1 = Conv2D(64, 3, strides=1, **conv_kwargs)(e1)
     # (128 x 128 x 64)
 
-    # layer 2 
+    # block 2 
     e2 = LeakyReLU(alpha=slope)(e1)
     e2 = Conv2D(128, 3, strides=2, **conv_kwargs)(e2)
     e2 = BatchNormalization(**bn_kwargs)(e2)
@@ -54,7 +60,7 @@ def unet2(pretrained_weights=None, input_size=(256,256,1)):
     e2 = BatchNormalization(**bn_kwargs)(e2)
     # (64 x 64 x 128)
 
-    # layer 3 
+    # block 3 
     e3 = LeakyReLU(alpha=slope)(e2)
     e3 = Conv2D(256, 3, strides=2, **conv_kwargs)(e3)
     e3 = BatchNormalization(**bn_kwargs)(e3)
@@ -63,7 +69,7 @@ def unet2(pretrained_weights=None, input_size=(256,256,1)):
     e3 = BatchNormalization(**bn_kwargs)(e3)
     # (32 x 32 x 256)
 
-    # layer 4
+    # block 4
     e4 = LeakyReLU(alpha=slope)(e3)
     e4 = Conv2D(512, 3, strides=2, **conv_kwargs)(e4)
     e4 = BatchNormalization(**bn_kwargs)(e4)
@@ -73,7 +79,7 @@ def unet2(pretrained_weights=None, input_size=(256,256,1)):
     e4 = Dropout(dropout)(e4)
     # (16 x 16 x 512)
 
-    # layer 5a
+    # block 5a
     e5 = LeakyReLU(alpha=slope)(e4)
     e5 = Conv2D(1024, 3, strides=2, **conv_kwargs)(e5)
     e5 = BatchNormalization(**bn_kwargs)(e5)
@@ -86,14 +92,14 @@ def unet2(pretrained_weights=None, input_size=(256,256,1)):
     # ----------------------------------------------------------------
     # DECODER
 
-    # layer 6
+    # block 6
     d1 = ReLU()(e5)
     d1 = Conv2DTranspose(512, 2, strides=2, **conv_kwargs)(d1)
     d1 = BatchNormalization(**bn_kwargs)(d1)
     d1 = Dropout(dropout)(d1) 
     # (16 x 16 x 512)
 
-    # layer 7
+    # block 7
     d2 = concatenate([d1, e4], axis=3)
     d2 = ReLU()(d2)
     d2 = Conv2DTranspose(256, 2, strides=2, **conv_kwargs)(d2)
@@ -106,7 +112,7 @@ def unet2(pretrained_weights=None, input_size=(256,256,1)):
     d2 = BatchNormalization(**bn_kwargs)(d2)
     # (32 x 32 x 256)
 
-    # layer 8
+    # block 8
     d3 = concatenate([d2, e3], axis=3)
     d3 = ReLU()(d3)
     d3 = Conv2DTranspose(128, 2, strides=2, **conv_kwargs)(d3)
@@ -119,7 +125,7 @@ def unet2(pretrained_weights=None, input_size=(256,256,1)):
     d3 = BatchNormalization(**bn_kwargs)(d3)
     # (64 x 64 x 128)
 
-    # layer 9
+    # block 9
     d4 = concatenate([d3, e2], axis=3)
     d4 = ReLU()(d4)
     d4 = Conv2DTranspose(64, 2, strides=2, **conv_kwargs)(d4)
@@ -132,14 +138,14 @@ def unet2(pretrained_weights=None, input_size=(256,256,1)):
     d4 = BatchNormalization(**bn_kwargs)(d4)
     # (128 x 128 x 64)
 
-    # layer 10
+    # block 10
     d5 = concatenate([d4, e1], axis=3)
     d5 = ReLU()(d5)  
     d5 = Conv2DTranspose(32, 2, strides=2, **conv_kwargs)(d5)
     d5 = ReLU()(d5)
     d5 = Conv2D(2, 3, strides=1, **conv_kwargs)(d5)
     d5 = ReLU()(d5)
-    d5 = Conv2D(1, 3, strides=1, **conv_kwargs)(d5)
+    d5 = Conv2D(1, 1, strides=1, **conv_kwargs)(d5)
     d5 = Activation('tanh')(d5)
     # (256 x 256 x output_channels)
 
