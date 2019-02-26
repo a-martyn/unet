@@ -8,6 +8,9 @@ from tensorflow.keras.optimizers import *
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 
 
+# INTENDED API
+# ------------------------------------------------------------------------------
+
 def unet_pix2pix_pytorch(input_size=(256,256,1), output_channels=1):
     """
     A Keras/Tensorflow implementation of the U-net used in the latest pix2pix 

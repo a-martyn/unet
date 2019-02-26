@@ -70,6 +70,9 @@ def decoder_block(inputs, filters, kernel_size, transpose=True):
     return x
 
 
+# INTENDED API
+# ------------------------------------------------------------------------------
+
 def unet(input_size=(256, 256, 1), output_channels=1, transpose=True):
     """
     U-net implementation adapted translated from authors original
