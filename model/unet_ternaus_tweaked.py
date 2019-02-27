@@ -3,6 +3,9 @@ import os
 import skimage.io as io
 import skimage.transform as trans
 import tensorflow as tf
+import tensorflow.keras as keras
+from tensorflow.python.keras.engine.network import Network
+from tensorflow.keras import backend as K
 from tensorflow.keras.models import *
 from tensorflow.keras.layers import *
 from tensorflow.keras.optimizers import *
@@ -45,17 +48,53 @@ def decoder_block_ternausV2(inputs, mid_channels, out_channels, batch_norm=True)
 
     x = UpSampling2D(size=(2, 2))(inputs) # interpolation='bilinear' doesn't work?
     x = Conv2D(mid_channels, 3, **conv_kwargs)(x)
-    x = BatchNormalization(**bn_kwargs)(x) if batch_norm
+    if batch_norm: x = BatchNormalization(**bn_kwargs)(x)
     x = Conv2D(out_channels, 3, **conv_kwargs)(x)
-    x = BatchNormalization(**bn_kwargs)(x) if batch_norm
+    if batch_norm: x = BatchNormalization(**bn_kwargs)(x)
     return x
 
 
+# def reset_weights(model):
+#     """
+#     Resets model weights by re-initialising them for each layer.
+#     See discussion: https://github.com/keras-team/keras/issues/341
+#     """
+#     session = K.get_session()
+#     for layer in model.layers: 
+#         if isinstance(layer, Network):
+#             reset_weights(layer)
+#             continue
+#         for v in layer.__dict__.values():
+#             if hasattr(v, 'initializer'):
+#                 v.initializer.run(session=session)
+#     return
+
+def reset_weights(model):
+    """
+    Resets model weights by re-initialising them for each layer.
+    See discussion: https://github.com/keras-team/keras/issues/341
+    """
+    session = K.get_session()
+    for layer in model.layers: 
+        if isinstance(layer, Network):
+            reset_weights(layer)
+            continue
+        # Only reset vgg pretrained conv layers
+        if layer.name[:5] == 'block':
+            for v in layer.__dict__:
+                v_arg = getattr(layer, v)
+                if hasattr(v_arg,'initializer'):
+                    initializer_method = getattr(v_arg, 'initializer')
+                    initializer_method.run(session=session)
+                    print('reinitializing layer {}.{}'.format(layer.name, v))
+
+                  
+  
 # INTENDED API
 # ------------------------------------------------------------------------------
 
 def ternausNet16_tweaked(input_size=(256, 256, 3), output_channels=1, 
-                    dropout=True, batch_norm=True):
+                         dropout=True, batch_norm=True, pretrained=True):
     """
     A Keras implementation of TernausNet16: 
     https://arxiv.org/abs/1801.05746
@@ -85,40 +124,40 @@ def ternausNet16_tweaked(input_size=(256, 256, 3), output_channels=1,
     # (None, 256, 256, 64)
     e2 = MaxPooling2D(pool_size=(2, 2))(e1)
     e2 = encoder.get_layer(name='block2_conv1')(e2)
-    e2 = BatchNormalization(**bn_kwargs)(e2) if batch_norm
+    if batch_norm: e2 = BatchNormalization(**bn_kwargs)(e2)
     e2 = encoder.get_layer(name='block2_conv2')(e2)
-    e2 = BatchNormalization(**bn_kwargs)(e2) if batch_norm
+    if batch_norm: e2 = BatchNormalization(**bn_kwargs)(e2)
     # (None, 128, 128, 128)
     e3 = MaxPooling2D(pool_size=(2, 2))(e2)
     e3 = encoder.get_layer(name='block3_conv1')(e3)
-    e3 = BatchNormalization(**bn_kwargs)(e3) if batch_norm
+    if batch_norm: e3 = BatchNormalization(**bn_kwargs)(e3)
     e3 = encoder.get_layer(name='block3_conv2')(e3)
-    e3 = BatchNormalization(**bn_kwargs)(e3) if batch_norm
+    if batch_norm: e3 = BatchNormalization(**bn_kwargs)(e3)
     e3 = encoder.get_layer(name='block3_conv3')(e3)
-    e3 = BatchNormalization(**bn_kwargs)(e3) if batch_norm
+    if batch_norm: e3 = BatchNormalization(**bn_kwargs)(e3)
     # (None, 64, 64, 256)
     e4 = MaxPooling2D(pool_size=(2, 2))(e3)
     e4 = encoder.get_layer(name='block4_conv1')(e4)
-    e4 = BatchNormalization(**bn_kwargs)(e4) if batch_norm
+    if batch_norm: e4 = BatchNormalization(**bn_kwargs)(e4)
     e4 = encoder.get_layer(name='block4_conv2')(e4)
-    e4 = BatchNormalization(**bn_kwargs)(e4) if batch_norm
+    if batch_norm: e4 = BatchNormalization(**bn_kwargs)(e4)
     e4 = encoder.get_layer(name='block4_conv3')(e4)
-    e4 = BatchNormalization(**bn_kwargs)(e4) if batch_norm
+    if batch_norm: e4 = BatchNormalization(**bn_kwargs)(e4)
     # (None, 32, 32, 512)
     e5 = MaxPooling2D(pool_size=(2, 2))(e4)
     e5 = encoder.get_layer(name='block5_conv1')(e5)
-    e5 = BatchNormalization(**bn_kwargs)(e5) if batch_norm
+    if batch_norm: e5 = BatchNormalization(**bn_kwargs)(e5)
     e5 = encoder.get_layer(name='block5_conv2')(e5)
-    e5 = BatchNormalization(**bn_kwargs)(e5) if batch_norm
+    if batch_norm: e5 = BatchNormalization(**bn_kwargs)(e5)
     e5 = encoder.get_layer(name='block5_conv3')(e5)
-    e5 = BatchNormalization(**bn_kwargs)(e5) if batch_norm
-    e5 = Dropout(0.5)(e5) if dropout
+    if batch_norm: e5 = BatchNormalization(**bn_kwargs)(e5)
+    if dropout: e5 = Dropout(0.5)(e5)
     # (None, 16, 16, 512)
     center = MaxPooling2D(pool_size=(2, 2))(e5)
     # (None, 8, 8, 512)
     center = decoder_block_ternausV2(center, 512, 256)
-    center = BatchNormalization(**bn_kwargs)(center) if batch_norm
-    centre = Dropout(0.5)(center) if dropout
+    if batch_norm: center = BatchNormalization(**bn_kwargs)(center)
+    if dropout: centre = Dropout(0.5)(center)
     # (None, 16, 16, 256)
     d5 = concatenate([e5, center], axis=3)
     d5 = decoder_block_ternausV2(d5, 512, 256, batch_norm=batch_norm)
@@ -148,6 +187,11 @@ def ternausNet16_tweaked(input_size=(256, 256, 3), output_channels=1,
 
     # Build
     model = Model(inputs=[inputs], outputs=[op])
+    
+    # Forget pretrained weights
+    if not pretrained:
+        reset_weights(model)
+    
     return model
 
 

@@ -58,8 +58,8 @@ def decoder_block(inputs, filters, kernel_size, transpose=True):
         up = Conv2DTranspose(filters, 2, strides=2, **conv_kwargs)(x)
     else:
         # Upsampling by simply repeating rows and columns then convolve
-        up = UpSampling2D(size=(2, 2), interpolation='nearest')(x)
-        up = Conv2D(filters, 2, **conv_kwargs)
+        up = UpSampling2D(size=(2, 2))(x)
+        up = Conv2D(filters, 2, **conv_kwargs)(up)
     
     # Concatenate u-net shortcut to input
     x = concatenate([shortcut, up], axis=3)
