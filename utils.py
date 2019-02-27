@@ -5,7 +5,7 @@ from tensorflow.keras.optimizers import Adam
 from pprint import pprint
 
 def test_model(model_fn, train_loader, test_loader, train_steps=50, val_steps=50, 
-               epochs=1, iterations=5, lr=1e-4, model_params={}) -> list:
+               epochs=1, iterations=5, lr=1e-4, model_params={}, save_pth=None) -> list:
     """
     Test a model for n iterations. Define the number of epochs, training steps 
     and validation steps used in each iteration.
@@ -20,6 +20,11 @@ def test_model(model_fn, train_loader, test_loader, train_steps=50, val_steps=50
                                       validation_data=test_loader, validation_steps=val_steps)
         hists.append(history.history)
         backend.clear_session()
+    
+    # Save trained model weights if pth given
+    if save_pth:
+        model.save(save_pth)
+    # Return training history
     return hists
 
 
@@ -41,16 +46,4 @@ def hists2df(hists:list):
             r['epoch'] = epoch
             df = df.append(r, ignore_index=True)
         experiment_number += 1
-    return df
-
-
-def hists2df_old(hists:list):
-    """
-    Converts list of training histories each returned from keras.model.fit_generator
-    to a pandas dataframe.
-    """
-    df = pd.DataFrame(columns=hists[0].keys())
-    for h in hists:
-        r = {k: h[k][-1] for k in h}
-        df = df.append(r, ignore_index=True)
     return df
