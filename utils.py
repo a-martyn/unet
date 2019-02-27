@@ -18,12 +18,13 @@ def test_model(model_fn, train_loader, test_loader, train_steps=50, val_steps=50
         model.compile(optimizer=Adam(lr=lr), loss='binary_crossentropy', metrics=['accuracy'])
         history = model.fit_generator(train_loader, steps_per_epoch=train_steps, epochs=epochs,
                                       validation_data=test_loader, validation_steps=val_steps)
-        hists.append(history.history)
+        hists.append(history.history)    
+        # Save trained model weights if pth given and last iteration
+        if save_pth and i==iterations-1:
+            model.save(save_pth)
+        # Clear weights so we can retrain model from scratch in next iteration
         backend.clear_session()
     
-    # Save trained model weights if pth given
-    if save_pth:
-        model.save(save_pth)
     # Return training history
     return hists
 
