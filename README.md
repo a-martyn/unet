@@ -6,13 +6,20 @@ conda activate unet
 
 ## Questions?
 
-Does upsampling with transposed-convolution layers improve performance over simple neares neighbour upsampling?
+How might "elastic deformation" data augmentation be reproduced?
+
+Does upsampling with transposed-convolution layers improve performance over simple nearest neighbour upsampling?
+- unet_baseline(transpose=True)
+- unet_baseline(transpose=False)
 
 Does using pretrained VGG network as encoder improve performance?
+- unet_ternaus
 
-Does use of LeakyReLU in downsampling improve performance?
-
+Does ternausNet benefit from addition of dropout per orginal U-Net?
 Does batch normalisation help?
+- ternaus net mods
+
+Does ternausNet benefit from addition of LeakyReLU in encoder?
 
 
 ## Applications
