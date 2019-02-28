@@ -1,6 +1,7 @@
 import pandas as pd
 from tensorflow.keras import backend
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping, ModelCheckpoint
 
 from pprint import pprint
 
@@ -19,14 +20,20 @@ def test_model(model_fn, train_loader, test_loader, train_steps=50, val_steps=50
         model.compile(optimizer=Adam(lr=lr), loss='binary_crossentropy', metrics=['accuracy'])
         
         # Callbacks
+        
         # Reduce learning rate on plateau. Patience is one less than early stopping to give
         # new learning rate a try
         patience = 1
         reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.1, patience=patience-1, verbose=1)
+        
         # Stop training when validation accuracy decreases on subsequent epoch
-        early_stopping = EarlyStopping(monitor='val_acc', patience=patience, verbose=0)
-        # Save best model
-        save_model = ModelCheckpoint(save_pth, save_best_only=True, monitor='val_acc')
+        early_stopping = EarlyStopping(monitor='val_acc', patience=patience+1, verbose=1)
+        callbacks = [reduce_lr, early_stopping]
+        
+        # Save best model if path provided
+        if save_pth:
+            save_model = ModelCheckpoint(save_pth, save_best_only=True, monitor='val_acc')
+            callbacks += [save_model]
         
         # Fit the model
         history = model.fit_generator(train_loader, steps_per_epoch=train_steps, epochs=epochs,
