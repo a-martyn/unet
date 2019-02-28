@@ -1,4 +1,3 @@
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,46 +9,6 @@ Loads the membrane cell segmentation dataset
 Adapted and simplified from: 
 https://github.com/zhixuhao/unet/blob/master/data.py
 """
-
-input_generator_train = ImageDataGenerator(
-    rotation_range=180,
-    width_shift_range=0.2,
-    height_shift_range=0.2,
-    brightness_range=[0.5, 1.5],
-    rescale=1./255,           #  rescale pixel vals 0-255 --> 0.0-1.0
-    shear_range=0.2,
-    zoom_range=[0.5, 1.0],
-    horizontal_flip=True,
-    fill_mode='reflect',
-    data_format='channels_last',
-    validation_split=0.0
-)
-target_generator_train = ImageDataGenerator(
-    rotation_range=180,
-    width_shift_range=0.2,
-    height_shift_range=0.2,
-    # No brightness transform on target mask
-    rescale=1./255,           #  rescale pixel vals 0-255 --> 0.0-1.0
-    shear_range=0.2,
-    zoom_range=[0.5, 1.0],
-    horizontal_flip=True,
-    fill_mode='reflect',
-    data_format='channels_last',
-    validation_split=0.0
-)
-
-input_generator_test = ImageDataGenerator(
-    rescale=1./255,           #  rescale pixel vals 0-255 --> 0.0-1.0
-    fill_mode='reflect',
-    data_format='channels_last',
-    validation_split=0.0
-)
-target_generator_test = ImageDataGenerator(
-    rescale=1./255,           #  rescale pixel vals 0-255 --> 0.0-1.0
-    fill_mode='reflect',
-    data_format='channels_last',
-    validation_split=0.0
-)
 
 def adjust_data(y):
     """

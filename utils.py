@@ -14,14 +14,26 @@ def test_model(model_fn, train_loader, test_loader, train_steps=50, val_steps=50
     """
     hists = []
     for i in range(iterations):
-        model = model_fn(input_size=(256, 256, 1), output_channels=1, **model_params)
+        # compile model
+        model = model_fn(output_channels=1, **model_params)
         model.compile(optimizer=Adam(lr=lr), loss='binary_crossentropy', metrics=['accuracy'])
+        
+        # Callbacks
+        # Reduce learning rate on plateau. Patience is one less than early stopping to give
+        # new learning rate a try
+        patience = 1
+        reduce_lr = ReduceLROnPlateau(monitor='val_acc', factor=0.1, patience=patience-1, verbose=1)
+        # Stop training when validation accuracy decreases on subsequent epoch
+        early_stopping = EarlyStopping(monitor='val_acc', patience=patience, verbose=0)
+        # Save best model
+        save_model = ModelCheckpoint(save_pth, save_best_only=True, monitor='val_acc')
+        
+        # Fit the model
         history = model.fit_generator(train_loader, steps_per_epoch=train_steps, epochs=epochs,
-                                      validation_data=test_loader, validation_steps=val_steps)
+                                      validation_data=test_loader, validation_steps=val_steps,
+                                      callbacks=[reduce_lr, early_stopping, save_model])
         hists.append(history.history)    
-        # Save trained model weights if pth given and last iteration
-        if save_pth and i==iterations-1:
-            model.save(save_pth)
+
         # Clear weights so we can retrain model from scratch in next iteration
         backend.clear_session()
     
@@ -48,3 +60,12 @@ def hists2df(hists:list):
             df = df.append(r, ignore_index=True)
         experiment_number += 1
     return df
+
+
+# def json_dump(data, filepath):
+#     """
+#     write python data to disk as json
+#     """
+#     with open(filepath, 'w') as outfile:
+#         json.dump(data, outfile)
+#     return
