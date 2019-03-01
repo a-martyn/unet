@@ -38,7 +38,7 @@ def test_model(model_fn, train_loader, test_loader, train_steps=50, val_steps=50
         # Fit the model
         history = model.fit_generator(train_loader, steps_per_epoch=train_steps, epochs=epochs,
                                       validation_data=test_loader, validation_steps=val_steps,
-                                      callbacks=[reduce_lr, early_stopping, save_model])
+                                      callbacks=callbacks)
         hists.append(history.history)    
 
         # Clear weights so we can retrain model from scratch in next iteration
