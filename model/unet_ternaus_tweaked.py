@@ -19,7 +19,8 @@ https://github.com/ternaus/TernausNet
 """
 
 
-def decoder_block_ternausV2(inputs, mid_channels, out_channels, batch_norm=True):
+def decoder_block_ternausV2(inputs, mid_channels, out_channels, 
+                            batch_norm=True):
     """
     Decoder block as proposed for TernausNet16: 
     https://arxiv.org/abs/1801.05746
@@ -46,28 +47,13 @@ def decoder_block_ternausV2(inputs, mid_channels, out_channels, batch_norm=True)
         'epsilon': 1e-5   # match pytorch defaults
     }
 
-    x = UpSampling2D(size=(2, 2))(inputs) # interpolation='bilinear' doesn't work?
+    x = UpSampling2D(size=(2, 2))(inputs)
     x = Conv2D(mid_channels, 3, **conv_kwargs)(x)
     if batch_norm: x = BatchNormalization(**bn_kwargs)(x)
     x = Conv2D(out_channels, 3, **conv_kwargs)(x)
     if batch_norm: x = BatchNormalization(**bn_kwargs)(x)
     return x
 
-
-# def reset_weights(model):
-#     """
-#     Resets model weights by re-initialising them for each layer.
-#     See discussion: https://github.com/keras-team/keras/issues/341
-#     """
-#     session = K.get_session()
-#     for layer in model.layers: 
-#         if isinstance(layer, Network):
-#             reset_weights(layer)
-#             continue
-#         for v in layer.__dict__.values():
-#             if hasattr(v, 'initializer'):
-#                 v.initializer.run(session=session)
-#     return
 
 def reset_weights(model):
     """
@@ -88,10 +74,9 @@ def reset_weights(model):
                     initializer_method.run(session=session)
                     print('reinitializing layer {}.{}'.format(layer.name, v))
 
-                  
-  
+
 # INTENDED API
-# ------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 def ternausNet16_tweaked(input_size=(256, 256, 3), output_channels=1, 
                          dropout=True, batch_norm=True, pretrained=True):
@@ -116,7 +101,8 @@ def ternausNet16_tweaked(input_size=(256, 256, 3), output_channels=1,
         input_shape = input_size
     
     # Load pretrained VGG, conv layers include relu activation
-    encoder = VGG16(include_top=False, weights='imagenet', input_shape=input_shape)
+    encoder = VGG16(include_top=False, weights='imagenet',
+                    input_shape=input_shape)
        
     # (None, 256, 256, 3)
     e1 = encoder.get_layer(name='block1_conv1')(x)

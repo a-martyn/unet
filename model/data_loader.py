@@ -10,14 +10,61 @@ Adapted and simplified from:
 https://github.com/zhixuhao/unet/blob/master/data.py
 """
 
+# Data Augmentation config
+# ----------------------------------------------------------------------------
+input_generator_train = ImageDataGenerator(
+    rotation_range=2,
+    width_shift_range=0.05,
+    height_shift_range=0.05,
+    brightness_range=[0.8, 1.2],
+    rescale=1./255,           #  rescale pixel vals 0-255 --> 0.0-1.0
+    shear_range=0.05,
+    zoom_range=0.05,
+    horizontal_flip=True,
+    fill_mode='reflect', #nearest
+    data_format='channels_last',
+    validation_split=0.0
+)
+target_generator_train = ImageDataGenerator(
+    rotation_range=2,
+    width_shift_range=0.05,
+    height_shift_range=0.05,
+    # No brightness transform on target mask
+    rescale=1./255,           #  rescale pixel vals 0-255 --> 0.0-1.0
+    shear_range=0.05,
+    zoom_range=0.05,
+    horizontal_flip=True,
+    fill_mode='reflect',
+    data_format='channels_last',
+    validation_split=0.0
+)
+
+input_generator_test = ImageDataGenerator(
+    rescale=1./255,           #  rescale pixel vals 0-255 --> 0.0-1.0
+    fill_mode='reflect',
+    data_format='channels_last',
+    validation_split=0.0
+)
+
+target_generator_test = ImageDataGenerator(
+    rescale=1./255,           #  rescale pixel vals 0-255 --> 0.0-1.0
+    fill_mode='reflect',
+    data_format='channels_last',
+    validation_split=0.0
+)
+
+
+# Data Loaders
+# ----------------------------------------------------------------------------
+
 def adjust_data(y):
     """
-    Normalise pixel values and force target mask values to absolute vals
+    Normalise pixel values and force target mask values to binary vals
     Adapted from: https://github.com/zhixuhao/unet/blob/master/data.py
-    Note: above implementation includes support for mult-class labels which
+    Note: above implementation includes support for multi-class labels which
     is excluded here for simplicity
     """
-    # Push mask target values to absolute
+    # Push mask target values to binary
     # Note: this only makes sense if target is grayscale mask
     y[y > y.max()/2] = 1
     y[y <= y.max()/2] = 0 

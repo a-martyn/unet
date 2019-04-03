@@ -26,7 +26,7 @@ The key differences are:
 
 def decoder_block_ternausV2(inputs, mid_channels, out_channels):
     """
-    Decoder block as proposed for TernausNet16: 
+    Decoder block as proposed for TernausNet16 here: 
     https://arxiv.org/abs/1801.05746
     See DecoderBlockV2 here:
     https://github.com/ternaus/TernausNet/blob/master/unet_models.py
@@ -34,7 +34,7 @@ def decoder_block_ternausV2(inputs, mid_channels, out_channels):
     - Bilinear upsample input to double Height and Width dimensions
     - Note: The original ternausNet implementation includes option for 
       deconvolution instead of bilinear upsampling. Omitted here because I 
-      couldn't find a performance comparison
+      couldn't find a meaningful performance comparison
     """
     
     conv_kwargs = dict(
