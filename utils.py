@@ -67,12 +67,3 @@ def hists2df(hists:list):
             df = df.append(r, ignore_index=True)
         experiment_number += 1
     return df
-
-
-# def json_dump(data, filepath):
-#     """
-#     write python data to disk as json
-#     """
-#     with open(filepath, 'w') as outfile:
-#         json.dump(data, outfile)
-#     return
