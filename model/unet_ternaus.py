@@ -1,7 +1,5 @@
 import numpy as np
 import os
-import skimage.io as io
-import skimage.transform as trans
 import tensorflow as tf
 from tensorflow.keras.models import *
 from tensorflow.keras.layers import *
