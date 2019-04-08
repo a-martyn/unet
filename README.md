@@ -86,7 +86,7 @@ With respect to our initial questions the results from these experiments suggest
 1. Upsampling with transposed-convolutional layers improves performance over nearest-neighbour upsampling.
 1. Using pre-trained VGG network improves performance and reduces variance.
 1. Adding dropout to TernausNet architecture does not significantly improve performance.
-1. Adding batch normalisation in decoder does not significantly improve performance.
+1. Adding batch normalisation in TernausNet decoder does not significantly improve performance.
 
 ## Build instructions
 
