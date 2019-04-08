@@ -92,7 +92,9 @@ With respect to our initial questions the results from these experiments suggest
 
 ## Build instructions
 
-Tensorflow 1.13.1 requires CUDA 10 drivers if running on GPU, installation steps [here](https://www.tensorflow.org/install/gpu#install_cuda_with_apt). If running on CPU, change `tensorflow-gpu` to `tensorflow` in `requirements.txt`.
+The dataset is included in this repo.
+
+CUDA 10 drivers required if running on GPU, installation steps [here](https://www.tensorflow.org/install/gpu#install_cuda_with_apt). If running on CPU, change `tensorflow-gpu` to `tensorflow` in `requirements.txt`.
 
 Setup python environment:
 ```
