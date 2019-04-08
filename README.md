@@ -3,7 +3,7 @@
 
 ![isbi_examples](./assets/Challenge-ISBI-2012-Animation-Input-Labels.gif)
 
-This repo implements and compares three u-net architectures trained on the [ISBI Challenge](http://brainiac2.mit.edu/isbi_challenge/) dataset. The following architectures are included:
+This repo implements and compares three U-Net architectures trained on the [ISBI Challenge](http://brainiac2.mit.edu/isbi_challenge/) dataset. The following architectures are included:
 
 - **U-Net**: The original implementation as described in [1]
 - **TernausNet**: A pre-trained variation on the above as described in [2]
