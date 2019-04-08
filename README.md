@@ -45,6 +45,8 @@ Same as above but without pix2pix results to allow fine-grained comparison on a 
 
 ![256px_250steps_20epochs_nopix2pix](./assets/256px_250steps_20epochs_nopix2pix.jpg)
 
+Tabulated results from plots above.
+
 | model | parameters | mean validation acc. | std validation acc. |
 | --- | --- | --- | --- |
 | unet             | 31,031,685 | 0.9261 | 0.0132 | 
