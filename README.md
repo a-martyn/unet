@@ -61,15 +61,15 @@ Tabulated results from plots above.
 
 
 
-Disambiguation:
-- unet: as described in original paper [1]
-- unet_upsampled: as above but with bilinear upsampling instead of transposed convolutions in decoder
-- ternaus_nopre: TernausNet architecture without pretrained weights
-- ternaus: TernausNet with pretrained weights from ImageNet
-- ternaus_drop: As `ternaus`, with dropout added after final two layers of the encoder, as per `unet` 
-- ternaus_bn: As `ternaus`, with batch normalisation applied to decoder layers
-- ternaus_dropbn: combination of `ternaus_drop` and `ternaus_bn`
-- pix2pix_generator: generator for the pix2pix GAN as described in [3]
+Disambiguation of model names:
+- **unet**: as described in original paper [1]
+- **unet_upsampled**: as above but with bilinear upsampling instead of transposed convolutions in decoder
+- **ternaus_nopre**: TernausNet architecture without pretrained weights
+- **ternaus**: TernausNet with pretrained weights from ImageNet
+- **ternaus_drop**: As `ternaus`, with dropout added after final two layers of the encoder, as per `unet` 
+- **ternaus_bn**: As `ternaus`, with batch normalisation applied to decoder layers
+- **ternaus_dropbn**: combination of `ternaus_drop` and `ternaus_bn`
+- **pix2pix_generator**: generator for the pix2pix GAN as described in [3]
 
 The TernausNet with added dropout achieves the highest mean pixel accuracy of 0.9322. All variations on the TernausNet architecture perform similarly, except for when pre-trained weights are excluded. 
 
